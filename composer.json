@@ -1,0 +1,22 @@
+{
+    "name": "vipsoft/amqprpc",
+    "type": "library",
+    "description": "AMQP RPC Client/Server",
+    "keywords": ["amqp", "rpc", "client", "server"],
+    "homepage": "http://github.com/vipsoft/",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Anthon Pang",
+            "email": "apang@softwaredevelopment.ca",
+            "role": "developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.6",
+        "ext-amqp": "*"
+    },
+    "autoload": {
+        "psr-0": { "VIPSoft\\Amqp": "src/" }
+    }
+}
