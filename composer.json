@@ -14,7 +14,7 @@
     ],
     "require": {
         "php": ">=5.3.6",
-        "ext-amqp": "*"
+        "ext-amqp": "~1.11.0"
     },
     "autoload": {
         "psr-0": { "VIPSoft\\Amqp": "src/" }

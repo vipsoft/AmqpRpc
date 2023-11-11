@@ -6,6 +6,11 @@
 
 namespace VIPSoft\Amqp;
 
+// added in php-amqp 2.0.0
+if ( ! defined('AMQP_DELIVERY_MODE_PERSISTENT')) {
+    define('AMQP_DELIVERY_MODE_PERSISTENT', 2);
+}
+
 /**
  * AMQP RPC Client
  *
@@ -44,7 +49,7 @@ class RpcClient
         $correlationId = uniqid();
 
         // create temporary queue for the rpc response
-        $queue = new Queue($this->exchange->getChannel());
+        $queue = new \AMQPQueue($this->exchange->getChannel());
         $queue->setFlags(AMQP_EXCLUSIVE);
         $queue->declareQueue();
 
@@ -57,7 +62,7 @@ class RpcClient
         $attributes = [
             'correlation_id' => $correlationId,
             'content_type'   => 'application/json',
-            'delivery_mode'  => self::DELIVERY_MODE_PERSISTENT,
+            'delivery_mode'  => AMQP_DELIVERY_MODE_PERSISTENT,
             'message_id'     => uniqid(),
             'reply_to'       => $queue->getName(),
             'timestamp'      => time(),

@@ -11,6 +11,10 @@ These classes were extracted and refactored from the RabbitMQ RPC tutorial:
 
 For examples, please refer to the [wiki](https://github.com/vipsoft/AmqpRpc/wiki).
 
+## Caveats
+
+Support for php-amqp 2.0.0+ (released in 2023) pending its inclusion in distros and PPAs.
+
 ## Copyright
 
 * Copyright (c) 2023 Anthon Pang <apang@softwaredevelopment.ca>

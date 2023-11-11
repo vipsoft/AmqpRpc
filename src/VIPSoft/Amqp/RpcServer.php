@@ -6,6 +6,11 @@
 
 namespace VIPSoft\Amqp;
 
+// added in php-amqp 2.0.0
+if ( ! defined('AMQP_DELIVERY_MODE_PERSISTENT')) {
+    define('AMQP_DELIVERY_MODE_PERSISTENT', 2);
+}
+
 /**
  * AMQP RPC Server
  *
@@ -79,7 +84,7 @@ class RpcServer
                 $attributes = [
                     'correlation_id' => $correlationId,
                     'content_type'   => 'application/json',
-                    'delivery_mode'  => self::DELIVERY_MODE_PERSISTENT,
+                    'delivery_mode'  => AMQP_DELIVERY_MODE_PERSISTENT,
                     'message_id'     => uniqid(),
                     'timestamp'      => time(),
                 ];
