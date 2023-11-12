@@ -57,43 +57,47 @@ class RpcServer
         $channel    = $this->queue->getChannel();
         $exchange   = new \AMQPExchange($channel);
 
-        $this->queue->consume(
-            function (\AMQPEnvelope $message, \AMQPQueue $queue) use ($exchange, $dispatcher) {
-                $deliveryTag   = $message->getDeliveryTag();
-                $correlationId = $message->getCorrelationId();
-                $replyTo       = $message->getReplyTo();
-                $data          = json_decode($message->getBody(), true);
-                $from          = $data['from'];
-                $service       = $data['service'];
-                $arguments     = $data['arguments'];
+        try {
+            $this->queue->consume(
+                function (\AMQPEnvelope $message, \AMQPQueue $queue) use ($exchange, $dispatcher) {
+                    $deliveryTag   = $message->getDeliveryTag();
+                    $correlationId = $message->getCorrelationId();
+                    $replyTo       = $message->getReplyTo();
+                    $data          = json_decode($message->getBody(), true);
+                    $from          = $data['from'];
+                    $service       = $data['service'];
+                    $arguments     = $data['arguments'];
 
-                try {
-                    $exception = null;
-                    $response  = null;
-                    $response  = call_user_func($dispatcher, $from, $service, $arguments);
-                } catch (\Exception $e) {
-                    $exception = $e->getMessage();
-                }
+                    try {
+                        $exception = null;
+                        $response  = null;
+                        $response  = call_user_func($dispatcher, $from, $service, $arguments);
+                    } catch (\Exception $e) {
+                        $exception = $e->getMessage();
+                    }
 
-                $data = [
-                    'from'           => gethostname(),
-                    'response'       => $response,
-                    'exception'      => $exception,
-                ];
+                    $data = [
+                        'from'           => gethostname(),
+                        'response'       => $response,
+                        'exception'      => $exception,
+                    ];
 
-                $attributes = [
-                    'correlation_id' => $correlationId,
-                    'content_type'   => 'application/json',
-                    'delivery_mode'  => AMQP_DELIVERY_MODE_PERSISTENT,
-                    'message_id'     => uniqid(),
-                    'timestamp'      => time(),
-                ];
+                    $attributes = [
+                        'correlation_id' => $correlationId,
+                        'content_type'   => 'application/json',
+                        'delivery_mode'  => AMQP_DELIVERY_MODE_PERSISTENT,
+                        'message_id'     => uniqid(),
+                        'timestamp'      => time(),
+                    ];
 
-                $exchange->publish(json_encode($data), $replyTo, AMQP_NOPARAM, $attributes);
+                    $exchange->publish(json_encode($data), $replyTo, AMQP_NOPARAM, $attributes);
 
-                $queue->ack($deliveryTag);
-            },
-            AMQP_NOPARAM
-        );
+                    $queue->ack($deliveryTag);
+                },
+                AMQP_NOPARAM
+            );
+        } catch (\Exception $e) {
+            // read timeout
+        }
     }
 }
