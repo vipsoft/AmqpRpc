@@ -1,0 +1,7 @@
+parameters:
+    level: 9
+    paths:
+        - src
+    ignoreErrors:
+        # The timeout was changed to float in php-amqp 1.11.0
+        - '~Parameter #1 \$timeout of method AMQPConnection::setReadTimeout\(\) expects int, float given.~'

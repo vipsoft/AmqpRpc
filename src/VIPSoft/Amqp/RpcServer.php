@@ -14,9 +14,9 @@ if ( ! defined('AMQP_DELIVERY_MODE_PERSISTENT')) {
 /**
  * AMQP RPC Server
  *
- * @see https://www.rabbitmq.com/tutorials/tutorial-six-php.html
- *
  * @author Anthon Pang <apang@softwaredevelopment.ca>
+ *
+ * @link   https://www.rabbitmq.com/tutorials/tutorial-six-php.html
  */
 class RpcServer
 {
@@ -39,6 +39,8 @@ class RpcServer
      * Set read timeout
      *
      * @param double $readTimeout Read timeout (in seconds)
+     *
+     * @return void
      */
     public function setReadTimeout($readTimeout)
     {
@@ -50,6 +52,8 @@ class RpcServer
      * Server RPC
      *
      * @param callable $dispatcher
+     *
+     * @return void
      */
     public function answer($dispatcher)
     {
@@ -63,24 +67,8 @@ class RpcServer
                     $deliveryTag   = $message->getDeliveryTag();
                     $correlationId = $message->getCorrelationId();
                     $replyTo       = $message->getReplyTo();
-                    $data          = json_decode($message->getBody(), true);
-                    $from          = $data['from'];
-                    $service       = $data['service'];
-                    $arguments     = $data['arguments'];
 
-                    try {
-                        $exception = null;
-                        $response  = null;
-                        $response  = call_user_func($dispatcher, $from, $service, $arguments);
-                    } catch (\Exception $e) {
-                        $exception = $e->getMessage();
-                    }
-
-                    $data = [
-                        'from'           => gethostname(),
-                        'response'       => $response,
-                        'exception'      => $exception,
-                    ];
+                    $data = $this->process($dispatcher, $message->getBody());
 
                     $attributes = [
                         'correlation_id' => $correlationId,
@@ -90,7 +78,11 @@ class RpcServer
                         'timestamp'      => time(),
                     ];
 
-                    $exchange->publish(json_encode($data), $replyTo, AMQP_NOPARAM, $attributes);
+                    if (($serializedData = json_encode($data)) === false) {
+                        $serializedData = '{"from":"' . gethostname() . '","response":"","exception":"JsonException: json_encode(response) error"}';
+                    }
+
+                    $exchange->publish($serializedData, $replyTo, AMQP_NOPARAM, $attributes);
 
                     $queue->ack($deliveryTag);
                 },
@@ -99,5 +91,42 @@ class RpcServer
         } catch (\Exception $e) {
             // read timeout
         }
+    }
+
+    /**
+     * Process request
+     *
+     * @param callable $dispatcher
+     * @param string   $body
+     *
+     * @return array<string, mixed>
+     */
+    private function process($dispatcher, $body)
+    {
+        $response  = null;
+        $exception = null;
+        $data      = json_decode($body, true);
+
+        if ( ! is_array($data) || json_last_error() !== JSON_ERROR_NONE) {
+            $exception = 'JsonException: json_decode(request) error';
+        } else {
+            $from      = $data['from'];
+            $service   = $data['service'];
+            $arguments = $data['arguments'];
+
+            try {
+                $response = call_user_func($dispatcher, $from, $service, $arguments);
+            } catch (\Exception $e) {
+                $exception = $e->getMessage();
+            }
+        }
+
+        $data = [
+            'from'      => gethostname(),
+            'response'  => $response,
+            'exception' => $exception,
+        ];
+
+        return $data;
     }
 }

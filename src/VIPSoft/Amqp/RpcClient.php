@@ -14,9 +14,9 @@ if ( ! defined('AMQP_DELIVERY_MODE_PERSISTENT')) {
 /**
  * AMQP RPC Client
  *
- * @see https://www.rabbitmq.com/tutorials/tutorial-six-php.html
- *
  * @author Anthon Pang <apang@softwaredevelopment.ca>
+ *
+ * @link   https://www.rabbitmq.com/tutorials/tutorial-six-php.html
  */
 class RpcClient
 {
@@ -38,11 +38,13 @@ class RpcClient
     /**
      * Client RPC
      *
-     * @param string $serviceName
-     * @param array  $args
-     * @param string $routingKey
+     * @param string       $serviceName
+     * @param array<mixed> $args
+     * @param string       $routingKey
      *
      * @return mixed|null
+     *
+     * @throws \Exception
      */
     public function call($serviceName, $args, $routingKey = '#')
     {
@@ -68,7 +70,11 @@ class RpcClient
             'timestamp'      => time(),
         ];
 
-        $this->exchange->publish(json_encode($data), $routingKey, AMQP_NOPARAM, $attributes);
+        if (($serializedData = json_encode($data)) === false) {
+            throw new \Exception('JsonException: json_encode(request) error');
+        }
+
+        $this->exchange->publish($serializedData, $routingKey, AMQP_NOPARAM, $attributes);
 
         $response = null;
 
@@ -81,7 +87,11 @@ class RpcClient
 
                     $data = json_decode($message->getBody(), true);
 
-                    if ($exception = $data['exception']){
+                    if ( ! is_array($data) || json_last_error() !== JSON_ERROR_NONE) {
+                        throw new \Exception('JsonException: json_decode(response) error');
+                    }
+
+                    if ($exception = $data['exception']) {
                         throw new \Exception($exception);
                     }
 
